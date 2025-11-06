@@ -2,10 +2,57 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <!-- 适配手机屏幕，禁止缩放 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>立冬快乐</title>
+    <title>神秘立冬礼物 ❄️</title>
     <style>
+        /* 弹窗样式（对应图一） */
+        .gift-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 400px;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            overflow: hidden;
+            z-index: 10001;
+        }
+        .popup-header {
+            background: #f5f9ff;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            border-bottom: 1px solid #eee;
+        }
+        .popup-content {
+            padding: 20px;
+            font-size: 16px;
+            color: #555;
+            line-height: 1.5;
+        }
+        .popup-btn {
+            width: 80px;
+            height: 36px;
+            background-color: #3296ff;
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            margin: 0 0 20px auto;
+            display: block;
+            margin-right: 20px;
+        }
+        .popup-btn:hover {
+            background-color: #2880e0;
+        }
+
         /* 提示框样式 */
         .tip-box {
             position: absolute;
@@ -15,18 +62,18 @@
             font-family: "微软雅黑", sans-serif;
             text-align: center;
             cursor: pointer;
-            z-index: 9999; /* 确保提示框在最上层 */
-            animation: fadeIn 0.5s ease-in-out; /* 淡入动画 */
-            box-shadow: 0 2px 8px rgba(0,0,0,0.15); /* 轻微阴影，更立体 */
+            z-index: 9999;
+            animation: fadeIn 0.5s ease-in-out;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            display: none;
         }
 
-        /* 淡入动画定义 */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* 关闭所有按钮样式 */
+        /* 关闭按钮样式 */
         .close-btn {
             position: fixed;
             bottom: 30px;
@@ -38,33 +85,41 @@
             border: none;
             border-radius: 50px;
             font-size: 16px;
-            font-family: "微软雅黑", sans-serif;
             cursor: pointer;
-            z-index: 10000; /* 按钮在提示框上层 */
+            z-index: 10000;
             box-shadow: 0 3px 10px rgba(255,68,68,0.3);
             transition: background-color 0.3s;
+            display: none;
         }
-
-        /* 按钮点击反馈 */
         .close-btn:active {
             background-color: #cc0000;
         }
 
-        /* 清除页面默认边距 */
         body {
             margin: 0;
             padding: 0;
-            overflow: hidden; /* 禁止页面滚动，避免提示框超出可视区 */
+            overflow: hidden;
+            background-color: #f0f5ff;
         }
     </style>
 </head>
 <body>
-    <!-- 关闭所有提示按钮 -->
+    <div class="gift-popup" id="giftPopup">
+        <div class="popup-header">
+            <span>❄️</span>
+            <span>立冬礼物</span>
+        </div>
+        <div class="popup-content">
+            您有一份立冬礼物，确定要打开吗？
+        </div>
+        <button class="popup-btn" id="openGiftBtn">确定</button>
+    </div>
+
     <button class="close-btn" onclick="closeAll()">按我关闭所有提示</button>
 
     <script>
-        // 温馨提示文字列表
-        const warmTips = [
+        // 增加更多温馨提示语（支持循环）
+       const warmTips = [
             '颜雯多喝水哦~', '颜雯保持微笑呀', '颜雯每天都要元气满满',
             '颜雯记得吃水果', '颜雯保持好心情', '颜雯好好爱自己',
             '颜雯梦想成真', '颜雯期待下一次见面', '颜雯立冬快乐',
@@ -72,73 +127,66 @@
             '颜雯别熬夜', '颜雯今天过得开心嘛', '颜雯天冷了，多穿衣服'
         ];
 
-        // 提示框背景颜色列表
         const bgColorList = [
-            'lightpink', 'skyblue', 'lightgreen', 'lavender',
-            'lightyellow', 'plum', 'coral', 'bisque', 'aquamarine'
+            '#ffdcdc', '#fff0dc', '#dcf5dc',
+            '#dce6fa', '#f0dcf5', '#ffdcdc'
         ];
 
-        // 存储所有提示框元素，用于批量关闭
         const tipElementList = [];
+        const giftPopup = document.getElementById('giftPopup');
+        const openGiftBtn = document.getElementById('openGiftBtn');
+        const closeBtn = document.querySelector('.close-btn');
 
-        /**
-         * 生成单个温馨提示框
-         */
         function createWarmTip() {
-            // 创建提示框DOM元素
             const tipBox = document.createElement('div');
             tipBox.className = 'tip-box';
-
-            // 随机设置提示文字和背景色
-            tipBox.textContent = warmTips[Math.floor(Math.random() * warmTips.length)];
+            // 循环取提示语（避免提示不够用）
+            const randomTip = warmTips[Math.floor(Math.random() * warmTips.length)];
+            tipBox.innerHTML = `<div style="font-size:12px; color:#ff3264; margin-bottom:5px;">提示</div>${randomTip}`;
             tipBox.style.backgroundColor = bgColorList[Math.floor(Math.random() * bgColorList.length)];
 
-            // 计算随机位置（适配手机屏幕，避开底部按钮）
             const screenWidth = window.innerWidth;
             const screenHeight = window.innerHeight;
-            const boxWidth = 150; // 提示框宽度
-            const boxHeight = 80; // 提示框高度
-            const xPos = Math.random() * (screenWidth - boxWidth); // 水平随机位置
-            const yPos = Math.random() * (screenHeight - boxHeight - 100); // 垂直随机位置（避开底部按钮）
+            const boxWidth = 150;
+            const boxHeight = 80;
+            const xPos = Math.random() * (screenWidth - boxWidth);
+            const yPos = Math.random() * (screenHeight - boxHeight - 100);
 
-            // 设置提示框位置
             tipBox.style.left = `${xPos}px`;
             tipBox.style.top = `${yPos}px`;
+            tipBox.style.display = 'block';
 
-            // 点击单个提示框可关闭
             tipBox.addEventListener('click', () => tipBox.remove());
-
-            // 添加到页面并记录
             document.body.appendChild(tipBox);
             tipElementList.push(tipBox);
         }
 
         /**
-         * 批量生成提示框（300个，间隔50ms）
+         * 批量生成100个提示框（循环使用提示语）
          */
         function batchCreateTips() {
             let createCount = 0;
             const createInterval = setInterval(() => {
-                if (createCount < 300) {
+                if (createCount < 1000) { // 数量改为100个
                     createWarmTip();
                     createCount++;
                 } else {
-                    clearInterval(createInterval); // 生成完毕，清除定时器
+                    clearInterval(createInterval);
                 }
             }, 50);
         }
 
-        /**
-         * 关闭所有提示框
-         */
         function closeAll() {
-            tipElementList.forEach(tip => tip.remove()); // 遍历删除所有提示框
-            tipElementList.length = 0; // 清空存储列表
+            tipElementList.forEach(tip => tip.remove());
+            tipElementList.length = 0;
         }
 
-        // 页面加载完成后，自动开始批量生成提示框
-        window.addEventListener('load', batchCreateTips);
+        openGiftBtn.addEventListener('click', () => {
+            giftPopup.style.display = 'none';
+            closeBtn.style.display = 'block';
+            batchCreateTips();
+        });
     </script>
-    <script src="script.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
